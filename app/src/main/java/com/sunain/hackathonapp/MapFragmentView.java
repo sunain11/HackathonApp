@@ -10,9 +10,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
+import android.text.SpannableString;
+import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,11 +24,13 @@ import com.here.android.mpa.common.GeoCoordinate;
 import com.here.android.mpa.common.GeoPolygon;
 import com.here.android.mpa.common.GeoPolyline;
 import com.here.android.mpa.common.GeoPosition;
+import com.here.android.mpa.common.Image;
 import com.here.android.mpa.common.OnEngineInitListener;
 import com.here.android.mpa.guidance.NavigationManager;
 import com.here.android.mpa.mapping.Map;
 import com.here.android.mpa.mapping.MapCircle;
 import com.here.android.mpa.mapping.MapFragment;
+import com.here.android.mpa.mapping.MapMarker;
 import com.here.android.mpa.mapping.MapPolygon;
 import com.here.android.mpa.mapping.MapPolyline;
 import com.here.android.mpa.mapping.MapRoute;
@@ -42,9 +46,11 @@ import com.here.android.mpa.routing.Router;
 import com.here.android.mpa.routing.RoutingError;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * This class encapsulates the properties and functionality of the Map view.It also triggers a
@@ -55,7 +61,7 @@ import java.util.List;
 public class MapFragmentView {
     private MapFragment m_mapFragment;
     private Activity m_activity;
-    private FloatingActionButton m_naviControlButton;
+    private Button m_naviControlButton;
     private Map m_map;
     private NavigationManager m_navigationManager;
     private GeoBoundingBox m_geoBoundingBox;
@@ -66,6 +72,7 @@ public class MapFragmentView {
     private MapPolyline m_polyline;
     TextView msg,spd;
     RelativeLayout msglay,spdlay;
+    private MapMarker m_map_marker;
 //    GeoPosition gp=new GeoPosition(new GeoCoordinate(26.398209813559323,80.19302722033899,0.0));
 
 
@@ -80,7 +87,7 @@ public class MapFragmentView {
         /* Locate the mapFragment UI element */
         m_mapFragment = (MapFragment) m_activity.getFragmentManager()
                 .findFragmentById(R.id.mapfragment);
-        msg=(TextView)m_activity.findViewById(R.id.textviewMessage);
+        msg=m_activity.findViewById(R.id.textviewMessage);
         spd=m_activity.findViewById(R.id.textviewSpeed);
         msglay=m_activity.findViewById(R.id.rel);
         spdlay=m_activity.findViewById(R.id.speedlayout);
@@ -159,7 +166,35 @@ public class MapFragmentView {
             m_map.addMapObject(m_circle);
         }
 
+createMapMarker();
 
+    }
+
+    private void createMapMarker() {
+
+        GeoCoordinate[] gpc=new GeoCoordinate[]
+                {
+                        new GeoCoordinate(27.119329, 78.568011,0.0),
+                        new GeoCoordinate(27.099175, 78.573470,0.0),
+                       new GeoCoordinate(27.125303, 78.610763,0.0),
+                        new GeoCoordinate(27.090755, 78.592033,0.0),
+                        new GeoCoordinate(27.145531, 78.53182,0.0),
+                        new GeoCoordinate(27.114112, 78.561815,0.0),
+                        new GeoCoordinate(27.112278, 78.558854,0.0)
+                };
+        for(int i=0;i<gpc.length;i++)
+        {
+            Image marker_img = new Image();
+            try {
+                marker_img.setImageResource(R.drawable.cafe);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            // create a MapMarker centered at current location with png image.
+            m_map_marker = new MapMarker(gpc[i], marker_img);
+            // add a MapMarker to current active map.
+            m_map.addMapObject(m_map_marker);
+        }
 
     }
     private void locateareasmoving(GeoPosition geoPosition)
@@ -180,8 +215,8 @@ public class MapFragmentView {
                         new GeoCoordinate(25.985579836734694 , 80.77354673469388,0.0)
                 };
         msg.setText("SmartDrive you are in safe area now.");
-        msglay.setBackgroundColor(Color.BLUE);
-        msg.setTextColor(Color.WHITE);
+        //msglay.setBackgroundColor(Color.BLUE);
+        msg.setTextColor(Color.BLUE);
         for(int i=0;i<12;i++)
         {
            if(geoPosition.getCoordinate().distanceTo(gpc[i])<2000)
@@ -189,13 +224,13 @@ public class MapFragmentView {
                if(geoPosition.getCoordinate().distanceTo(gpc[i])<1000)
                {
                    msg.setText("your are inside an accident prone area");
-                   msg.setTextColor(Color.BLACK);
-                   msglay.setBackgroundColor(Color.RED);
+                   msg.setTextColor(Color.RED);
+                   //msglay.setBackgroundColor(Color.RED);
                }
                else
                {
                    msg.setText("your are in 2km radius of accident prone area");
-                   msglay.setBackgroundColor(Color.YELLOW);
+                   //msglay.setBackgroundColor(Color.YELLOW);
                    msg.setTextColor(Color.BLACK);
                }
            }
@@ -350,8 +385,8 @@ public class MapFragmentView {
 
     @SuppressLint("ResourceAsColor")
     private void initNaviControlButton() {
-        m_naviControlButton = (FloatingActionButton) m_activity.findViewById(R.id.naviCtrlButton);
-        //m_naviControlButton.setText(R.string.start_navi);
+        m_naviControlButton = m_activity.findViewById(R.id.naviCtrlButton);
+        m_naviControlButton.setText(R.string.start_navi);
         //m_naviControlButton.setImageResource(R.drawable.);
 
         m_naviControlButton.setOnClickListener(new View.OnClickListener() {
@@ -378,8 +413,8 @@ public class MapFragmentView {
                     /*
                      * Restore the map orientation to show entire route on screen
                      */
-                    m_map.zoomTo(m_geoBoundingBox, Map.Animation.NONE, 0f);
-                    //m_naviControlButton.setText(R.string.start_navi);
+                    m_map.zoomTo(m_geoBoundingBox, Map.Animation.BOW, 0f);
+                    m_naviControlButton.setText(R.string.start_navi);
                     spdlay.setVisibility(View.INVISIBLE);
                     m_route = null;
                 }
@@ -414,7 +449,7 @@ public class MapFragmentView {
 
     @SuppressLint("ResourceAsColor")
     private void startNavigation() {
-       // m_naviControlButton.setText(R.string.stop_navi);
+        m_naviControlButton.setText(R.string.stop_navi);
 
         /* Display the position indicator on map */
         m_map.getPositionIndicator().setVisible(true);
@@ -490,7 +525,10 @@ public class MapFragmentView {
             /* Current position information can be retrieved in this callback */
            //createPolyline();
             locateareasmoving(geoPosition);
-            spd.setText((int)geoPosition.getSpeed()+"km/h");
+            String speed = String.format(Locale.ENGLISH, "%.0f", geoPosition.getSpeed() * 3.6) + "km/h";
+            SpannableString s = new SpannableString(speed);
+            s.setSpan(new RelativeSizeSpan(0.50f), s.length()-4, s.length(), 0);
+            spd.setText(s);
             Log.d("Speed",""+geoPosition.getSpeed());
             Log.d("Location",""+geoPosition.getCoordinate().getLatitude()+" "+geoPosition.getCoordinate().getLongitude());
         }
